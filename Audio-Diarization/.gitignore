@@ -1,0 +1,18 @@
+# Ignore virtual environment directory
+venv/
+
+# Ignore temporary files
+*.tmp
+*.temp
+
+# Ignore .env file (contains secrets)
+.env
+
+# Ignore __pycache__ directory
+__pycache__/
+
+# Ignore Python bytecode files
+*.pyc
+
+# Ignore Streamlit specific files/directories if any generated (less common, but good to include)
+.streamlit/ 
