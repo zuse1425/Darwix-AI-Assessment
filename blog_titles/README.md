@@ -191,7 +191,3 @@ curl -X POST http://127.0.0.1:8000/api/suggest-titles/ \
      -d '{ "content": "<h1>My Blog</h1><p>This is my blog post content…</p>" }'
 ```
 ---
-
-## License
-
-This project is MIT-licensed. See [LICENSE](LICENSE) for details.
