@@ -1,0 +1,11 @@
+Django>=4.2,<5
+djangorestframework>=3.14
+langchain>=0.0.355
+langchain-ollama>=0.0.30
+transformers>=4.35.0
+torch>=2.1.0,<3.0            # install CUDA‐enabled build if you have an NVIDIA GPU:
+                             # pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+faiss-cpu>=1.7.4
+beautifulsoup4>=4.12.2
+python-dotenv>=1.1.1
+requests>=2.31.0

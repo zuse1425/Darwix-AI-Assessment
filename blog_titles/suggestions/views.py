@@ -7,12 +7,13 @@ from .serializers import BlogContentSerializer
 
 from .utils import (
     clean_blog_text,
-    get_semantic_chunks,
+    get_recursive_chunks,
     get_top_k_chunks,
     summarize_chunk,
     combine_summaries,
     generate_three_titles
 )
+
 
 class TitleSuggestionAPIView(APIView):
     """
@@ -36,18 +37,18 @@ class TitleSuggestionAPIView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-        # 2. Semantic chunking (on cleaned text)
+        # 2. Recursive character splitting into ~1024-char chunks
         try:
-            semantic_chunks = get_semantic_chunks(cleaned)
+            chunks = get_recursive_chunks(cleaned)
         except Exception as e:
             return Response(
-                {"error": f"Semantic chunking failed: {str(e)}"},
+                {"error": f"Chunking failed: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-        # 3. Retrieve top 20 chunks (FAISS on cleaned text + semantic_chunks)
+        # 3. Retrieve top 20 chunks via FAISS
         try:
-            top_chunks = get_top_k_chunks(cleaned, semantic_chunks, k=20)
+            top_chunks = get_top_k_chunks(cleaned, chunks, k=20)
         except Exception as e:
             return Response(
                 {"error": f"FAISS retrieval failed: {str(e)}"},
@@ -56,17 +57,17 @@ class TitleSuggestionAPIView(APIView):
 
         # 4. Summarize each of those top 20 chunks
         chunk_summaries = []
-        for idx, chunk in enumerate(top_chunks):
+        for idx, chunk in enumerate(top_chunks, start=1):
             try:
                 summary = summarize_chunk(chunk)
             except Exception as e:
                 return Response(
-                    {"error": f"Summarization failed on chunk {idx+1}: {str(e)}"},
+                    {"error": f"Summarization failed on chunk {idx}: {str(e)}"},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
             chunk_summaries.append(summary)
 
-        # 5. Combine those chunk summaries into a global summary
+        # 5. Combine chunk summaries into a global summary
         try:
             global_summary = combine_summaries(chunk_summaries)
         except Exception as e:
