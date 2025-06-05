@@ -5,14 +5,14 @@ This folder contains a simple Python-based pipeline to transcribe an audio file 
 
 ## Repository Structure
 
-
+````
 
 Audio-Diarization/
 ├── requirements.txt
 ├── diarize.py          # Main script for transcription + diarization
 ├── transcribe.py       # (Optional) Separate transcription module
 └── README.md
-
+````
 
 ## Clone the Repository
 
