@@ -7,9 +7,9 @@ This folder contains a simple Python script to generate AI-powered blog post tit
 
 ````
 
-blog\_titles/
-├── blog\_titles/
-├── generate\_titles/ 
+blog_titles/
+├── blog_titles/
+├── generate_titles/ 
 ├── manage.py
 ├── requirements.txt
 └── README.md
