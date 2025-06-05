@@ -1,259 +1,79 @@
-# AI-Powered Blog Title Suggester
 
-A Django + DRF application that takes raw blog content (HTML or plain text), splits it into overlapping chunks, retrieves the most relevant pieces via FAISS embeddings, summarizes them using a Hugging Face model (on GPU if available), combines those summaries into a global overview via an LLM (Ollama), and finally generates three catchy title suggestions (also via Ollama).
+# Blog Post Title Suggestions
 
----
-
-## Features
-
-* **Recursive Character Splitting** into 1 024-character windows (with overlap) so each chunk fits a typical 1 024-token limit.
-* **FAISS Retrieval**: Embed and index chunks with `OllamaEmbeddings`, then retrieve the top 20 most relevant chunks for summarization.
-* **Fast Summarization**: Use Hugging Face’s DistilBART on GPU (if available) to summarize each chunk.
-* **Global Summary & Title Generation**:
-
-  * Combine chunk summaries into a single overall summary using `llama3:instruct` (Ollama).
-  * Generate three distinct, engaging titles from that summary via `llama3:instruct` (Ollama).
-* **GPU-Aware**: Summarization automatically uses CUDA if `torch.cuda.is_available()`; Ollama will use GPU (fp16) if the Ollama server is launched with `--gpu` and environment variables are set.
-
----
+This folder contains a simple Python script to generate AI-powered blog post title suggestions given a topic or seed phrase. It uses OpenAI’s API (or another large-language-model endpoint) to propose multiple catchy headlines.
 
 ## Repository Structure
 
-```
+````
+
 blog_titles/
-├── blog_titles/               # Django project (settings, URLs)
-├── suggestions/               # DRF app (“suggest-titles/” endpoint)
-│   ├── serializers.py         # BlogContentSerializer
-│   ├── urls.py                # Route for TitleSuggestionAPIView
-│   ├── utils.py               # Core pipeline (clean → chunk → embed → summarize → titles)
-│   └── views.py               # TitleSuggestionAPIView implementation
+├── blog_titles/
+├── generate_titles/ 
 ├── manage.py
 ├── requirements.txt
 └── README.md
-```
 
----
 
-## Prerequisites
+````
 
-1. **Python 3.8+**
-2. **Git** (to clone the repository)
-3. **CUDA-capable NVIDIA GPU** (optional, for faster summarization)
-4. **Ollama** (for `llama3:instruct` inference)
+## Clone the Repository
 
-   * Install via Homebrew (`brew install ollama`) on macOS or follow [https://ollama.com](https://ollama.com) for Windows/Linux.
-   * Pull and serve the model:
+To clone the **entire** Darwix-AI-Assessment repo and navigate into this folder, run:
 
-     ```bash
-     ollama pull llama3:instruct
-     ollama serve --gpu
-     ```
-
-     If you do not have a GPU or prefer CPU inference, omit `--gpu`:
-
-     ```bash
-     ollama serve
-     ```
-
----
+```bash
+git clone https://github.com/zuse1425/Darwix-AI-Assessment.git
+cd Darwix-AI-Assessment/blog_titles
+````
 
 ## Installation
 
-1. **Clone the repository**
+1. Create and activate a virtual environment:
 
    ```bash
-   git clone https://github.com/<your-username>/blog-title-suggester.git
-   cd blog-title-suggester
+   python3 -m venv venv
+   source venv/bin/activate       # On Windows: venv\Scripts\activate
    ```
 
-2. **Create and activate a virtual environment**
+2. Install dependencies:
 
    ```bash
-   python -m venv venv
-   source venv/bin/activate        # macOS/Linux
-   venv\Scripts\activate           # Windows PowerShell
-   ```
-
-3. **Install dependencies**
-
-   ```bash
-   pip install --upgrade pip
    pip install -r requirements.txt
    ```
 
-4. **(Optional) Install PyTorch with CUDA support**
-   If you have CUDA 11.8 drivers, for GPU summarization run:
+   > **Note:** `requirements.txt` typically includes `openai>=0.27.0` (or any other LLM client library you’re using), plus any helpers such as `python-dotenv` if you load API keys from a `.env` file.
+
+3. Make sure you have a valid `OPENAI_API_KEY` (or equivalent) in your environment:
 
    ```bash
-   pip uninstall torch torchvision torchaudio
-   pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+   export OPENAI_API_KEY="your_key_here"    # macOS/Linux
+   set OPENAI_API_KEY="your_key_here"       # Windows (cmd)
    ```
 
-   Verify in Python:
+## Usage
 
-   ```python
-   import torch
-   print(torch.cuda.is_available())  # should be True if GPU is enabled
-   ```
-
-5. **Start the Ollama server**
+1. Run the title generator script with a topic string:
 
    ```bash
-   ollama pull llama3:instruct       # if not already pulled
-   ollama serve --gpu                # for GPU inference
+   python generate_titles.py --topic "How to Implement RAG in Django"
    ```
 
-   If you want CPU‐only Ollama:
+2. By default, it prints out 3 suggestions to stdout. Example output:
+
+   ```
+   1. “Supercharge Your Django App with a RAG-Powered Chatbot”
+   2. “Step-by-Step: Building a Django RAG Pipeline for Smart Q&A”
+   3. “RAG in Django: A Beginner’s Guide to Retrieval-Augmented Generation”
+   ```
+
+3. If you’d like the output in a file, you can redirect stdout:
 
    ```bash
-   ollama serve
+   python generate_titles.py --topic "Data Cleaning Tools" > suggested_titles.txt
    ```
 
-6. **Set environment variables** (create a `.env` or export directly):
+## Customization
 
-   ```
-   USE_OLLAMA_GPU=1
-   OLLAMA_DEFAULT_DEVICE=cuda
-   OLLAMA_DEFAULT_PRECISION=fp16
-   ```
+* Inside `generate_titles.py`, look for constants such as `DEFAULT_NUM_TITLES` or `DEFAULT_MODEL`. You can tweak those or pass flags at runtime.
+* If you’d like to use a different LLM backend (e.g., Cohere, Anthropic, etc.), modify the API call section accordingly.
 
----
-
-## Running the Django API
-
-1. **Apply migrations**
-
-   ```bash
-   python manage.py migrate
-   ```
-
-2. **Create a superuser** (optional)
-
-   ```bash
-   python manage.py createsuperuser
-   ```
-
-3. **Run the development server**
-
-   ```bash
-   python manage.py runserver
-   ```
-
-   You should see:
-
-   ```
-   Watching for file changes with StatReloader
-   Performing system checks...
-
-   System check identified no issues (0 silenced).
-   Starting development server at http://127.0.0.1:8000/
-   ```
-
----
-
-## Environment Variables
-
-* **USE\_OLLAMA\_GPU**
-
-  * Set to `1` → instructs ChatOllama to run on GPU (requires Ollama server with `--gpu`).
-  * Set to `0` or unset → ChatOllama uses CPU.
-
-* **OLLAMA\_DEFAULT\_DEVICE** / **OLLAMA\_DEFAULT\_PRECISION**
-
-  * Typically set to `cuda` and `fp16`, respectively, so that Ollama‐hosted models run in fp16 on GPU. Only effective if Ollama is serving on GPU.
-
----
-
-## API Usage
-
-### Endpoint
-
-```
-POST http://127.0.0.1:8000/api/suggest-titles/
-Content-Type: application/json
-
-{
-  "content": "<raw blog post HTML or plain text>"
-}
-```
-
-* **Request Body**
-
-  * `content` (string, required): Full blog post text or HTML.
-
-* **Response (200 OK)**
-
-  ```json
-  {
-    "titles": [
-      "First Suggested Title",
-      "Second Suggested Title",
-      "Third Suggested Title"
-    ]
-  }
-  ```
-
-* **Error Responses**
-
-  * `400 Bad Request` if `content` is missing or invalid.
-  * `500 Internal Server Error` if any pipeline step fails—response body will be:
-
-    ```json
-    {
-      "error": "Detailed error message"
-    }
-    ```
-
-### Example
-
-```bash
-curl -X POST http://127.0.0.1:8000/api/suggest-titles/ \
-     -H "Content-Type: application/json" \
-     -d '{ "content": "<h1>My Blog</h1><p>This is my blog post content…</p>" }'
-```
-
----
-
-## Troubleshooting
-
-* **“Torch not compiled with CUDA enabled”**
-
-  1. Uninstall CPU‐only PyTorch:
-
-     ```bash
-     pip uninstall torch torchvision torchaudio
-     ```
-  2. Reinstall GPU‐enabled PyTorch (e.g., for CUDA 11.8):
-
-     ```bash
-     pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-     ```
-  3. Verify in Python:
-
-     ```python
-     import torch
-     print(torch.cuda.is_available())  # should be True
-     ```
-
-* **Ollama Connection Errors**
-
-  * Ensure you started Ollama with `ollama serve --gpu` (if `USE_OLLAMA_GPU=1`).
-  * If you only have CPU Ollama, set `USE_OLLAMA_GPU=0` (or unset) in your environment and restart Django.
-
-* **Chunk Too Long / Summarizer Errors**
-
-  * If you see errors about token length, reduce `chunk_size` (e.g. to 800) in `get_recursive_chunks()` so each chunk is well under 1 024 characters.
-
-* **404 on `/api/suggest-titles/`**
-
-  * Confirm that `suggestions/urls.py` is included in the project’s `urls.py`:
-
-    ```python
-    path("api/", include("suggestions.urls")),
-    ```
-
----
-
-## License
-
-This project is MIT-licensed. See [LICENSE](LICENSE) for details.
